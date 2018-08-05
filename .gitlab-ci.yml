@@ -1,0 +1,9 @@
+image: fedora:28
+before_script:
+  - dnf -y update
+  - dnf -y install pylint python3-pygame
+
+pylint:
+  script:
+    - pylint main.py
+
