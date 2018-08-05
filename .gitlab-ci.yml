@@ -5,5 +5,5 @@ before_script:
 
 pylint:
   script:
-    - pylint main.py
+    - pylint -d "too-many-branches" main.py
 
