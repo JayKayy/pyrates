@@ -2,6 +2,7 @@
 import random
 import pygame
 from lib.island import Island
+from lib.coin import Coin
 
 pygame.init()
 
@@ -17,12 +18,13 @@ pygame.display.set_caption('Pyrates!')
 CLOCK = pygame.time.Clock()
 
 SHIP_IMG = pygame.image.load('images/ship.png')
+COIN_IMG = pygame.image.load('images/pirate_coin.png')
 ISLAND_UN = pygame.image.load('images/island_uninhabited.png')
 ISLAND_TYPES = {'uninhabited': ISLAND_UN}
 ISLAND_NAMES = ['Nassau', 'Port Royal', 'Tortuga']
 # Populated at runtime
 ISLANDS = []
-
+COINS = []
 SHIP_X_MIN = 0
 SHIP_X_MAX = (DISPLAY_WIDTH - SHIP_IMG.get_size()[0])
 SHIP_Y_MIN = 0
@@ -33,6 +35,10 @@ ISLAND_X_MAX = (DISPLAY_WIDTH - ISLAND_UN.get_size()[0])
 ISLAND_Y_MIN = 0
 ISLAND_Y_MAX = (DISPLAY_HEIGHT - ISLAND_UN.get_size()[1])
 
+COIN_X_MIN = 0
+COIN_X_MAX = (DISPLAY_WIDTH - COIN_IMG.get_size()[0])
+COIN_Y_MIN = 0
+COIN_Y_MAX = (DISPLAY_HEIGHT - COIN_IMG.get_size()[1])
 
 def draw_ship(pos_x, pos_y):
     """ Draw the pirate ship """
@@ -47,18 +53,22 @@ def draw_ship(pos_x, pos_y):
     GAME_DISPLAY.blit(SHIP_IMG, (pos_x, pos_y))
 
 
+def draw_coin(c):
+    """ Draw the pirate coin """
+    GAME_DISPLAY.blit(COIN_IMG, (c.get_x(), c.get_y()))
+
 def draw_island(island):
     """ Draw an island """
-    if island.get_type() not in ISLAND_TYPES:
-        print(island.get_type())
+    if island.get_island_type() not in ISLAND_TYPES:
+        print(island.get_island_type())
         print("ERROR: Invalid Island type")
     else:
         GAME_DISPLAY.blit(
-            ISLAND_TYPES[island.get_type()], (island.get_x(), island.get_y()))
+            ISLAND_TYPES[island.get_island_type()], (island.get_x(), island.get_y()))
 
 
-def island_arrival(ship_x, ship_y):
-    """Detect if the ship has landed on an island """
+def ship_event(ship_x, ship_y):
+    """ Detect if the ship has landed on an item """
     # Modify ship_x and ship_y to calculate from the center of the ship
     ship_x += (SHIP_IMG.get_size()[0]/2)
     ship_y += (SHIP_IMG.get_size()[1]/2)
@@ -71,11 +81,18 @@ def island_arrival(ship_x, ship_y):
             if isle_y <= ship_y <= (isle_y + ISLAND_UN.get_size()[1]):
                 return True, isle
 
+    for coin in COINS:
+        coin_x = coin.get_x()
+        coin_y = coin.get_y()
+        if coin_x <= ship_x <= (coin_x + COIN_IMG.get_size()[0]):
+            if coin_y <= ship_y <= (coin_y + COIN_IMG.get_size()[1]):
+                return True, coin
+
     return False, None
 
-# def island_menu(island):
-#     """ Display island menu """
-#     message_display('You have arrived')
+#def island_menu(island):
+#    """ Display island menu """
+#    message_display('You have arrived')
 
 
 def text_objects(text, font):
@@ -95,6 +112,7 @@ def message_display(text):
 
 def game_loop():
     """ Main game loop """
+    COIN_CLOCK = 0
     ship_x = (DISPLAY_WIDTH * 0.45)
     ship_y = (DISPLAY_HEIGHT * 0.2)
     for island_name in ISLAND_NAMES:
@@ -131,12 +149,27 @@ def game_loop():
         GAME_DISPLAY.fill(OCEAN)
         for i in ISLANDS:
             draw_island(i)
+        for c in COINS:
+            draw_coin(c)
 
         draw_ship(ship_x, ship_y)
-        arrived, port = island_arrival(ship_x, ship_y)
-        if arrived:
-            message_display("You have arrived at " + port.get_name() + "!")
+        is_event, target = ship_event(ship_x, ship_y)
+        if is_event:
+            if target.get_type() == "island":
+                message_display("You have arrived at " + target.get_name() + "!")
+                if (COIN_CLOCK > 150):
+                     new_coin = Coin(random.randint(COIN_X_MIN, COIN_X_MAX),
+                                     random.randint(COIN_Y_MIN, COIN_Y_MAX))
+                     COINS.append(new_coin)
+                     COIN_CLOCK = 0
 
+            if target.get_type() == "coin":
+                COINS.remove(target)
+        
+        else:
+            COIN_CLOCK += 1000
+
+        COIN_CLOCK += 1
         pygame.display.update()
         CLOCK.tick(60)
 
